@@ -12,22 +12,22 @@
 
 <div class="app">
 
-  <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+  <!-- TOP BAR -->
   <header class="topbar">
     <div class="topbar-title">HamsterVerse</div>
     <div class="topbar-sub">Mini App</div>
   </header>
 
-  <!-- ТАБЫ GAMES / SOCIAL -->
+  <!-- TABS (GAMES / SOCIAL) -->
   <div class="tabs">
     <button class="tab active" data-tab="games">Games</button>
     <button class="tab" data-tab="social">Social media</button>
   </div>
 
-  <!-- ОСНОВНОЙ КОНТЕНТ -->
+  <!-- MAIN CONTENT -->
   <main class="content">
 
-    <!-- СТРАНИЦА GAMES -->
+    <!-- GAMES PAGE -->
     <section id="games" class="page active">
       <div class="banner">
         <div class="banner-title">BitQuest</div>
@@ -54,7 +54,7 @@
       </div>
     </section>
 
-    <!-- СТРАНИЦА SOCIAL -->
+    <!-- SOCIAL PAGE -->
     <section id="social" class="page">
       <h2>Social media</h2>
       <p>Здесь можно разместить ссылки на твой Telegram-канал, чат, X, YouTube и т.п.</p>
@@ -66,7 +66,7 @@
       </div>
     </section>
 
-    <!-- СТРАНИЦА WALLET -->
+    <!-- WALLET PAGE -->
     <section id="wallet" class="page">
       <h2>Wallet</h2>
 
@@ -86,10 +86,69 @@
       </div>
 
       <button class="primary-btn" id="refresh-btn">🔄 Обновить данные</button>
-      <p class="hint">Пока данные тестовые. Потом подключим реальные значения из бота.</p>
+      <p class="hint">Теперь данные берутся из твоего прогресса (localStorage). Потом можно будет подключить бэкенд бота.</p>
     </section>
 
-    <!-- СТРАНИЦА PROFILE -->
+    <!-- CHARGE PAGE (TAP + UPGRADES) -->
+    <section id="charge" class="page">
+      <h2>Charge</h2>
+
+      <div class="charge-top">
+        <div class="stat-card small">
+          <div class="stat-label">💰 Coins</div>
+          <div class="stat-value" id="charge-coins">0</div>
+        </div>
+        <div class="stat-card small">
+          <div class="stat-label">⚡ Energy</div>
+          <div class="stat-value" id="charge-energy">100 / 100</div>
+        </div>
+      </div>
+
+      <button class="tap-button" id="tap-button">
+        TAP<br>
+        <span id="tap-value">+1</span>
+      </button>
+
+      <p class="hint">Тапай, чтобы зарабатывать монеты. Энергия тратится, но со временем восстанавливается.</p>
+
+      <h3 class="section-subtitle">Upgrades</h3>
+      <div class="upgrades-list">
+        <div class="upgrade-card" data-upgrade="miner">
+          <div>
+            <div class="upgrade-title">Auto-Miner</div>
+            <div class="upgrade-sub">+200 PPH</div>
+          </div>
+          <div class="upgrade-right">
+            <div class="upgrade-cost" id="cost-miner">5 000</div>
+            <button class="upgrade-btn" data-upgrade="miner">Buy</button>
+          </div>
+        </div>
+
+        <div class="upgrade-card" data-upgrade="gym">
+          <div>
+            <div class="upgrade-title">Hamster Gym</div>
+            <div class="upgrade-sub">+1 к силе тапов</div>
+          </div>
+          <div class="upgrade-right">
+            <div class="upgrade-cost" id="cost-gym">2 000</div>
+            <button class="upgrade-btn" data-upgrade="gym">Buy</button>
+          </div>
+        </div>
+
+        <div class="upgrade-card" data-upgrade="farm">
+          <div>
+            <div class="upgrade-title">Energy Farm</div>
+            <div class="upgrade-sub">+50 к максимуму энергии</div>
+          </div>
+          <div class="upgrade-right">
+            <div class="upgrade-cost" id="cost-farm">3 000</div>
+            <button class="upgrade-btn" data-upgrade="farm">Buy</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROFILE PAGE -->
     <section id="profile" class="page">
       <h2>Profile</h2>
 
@@ -110,14 +169,18 @@
           <div class="stat-label">📅 Days in game</div>
           <div class="stat-value" id="days-value">1</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-label">👆 Total taps</div>
+          <div class="stat-value" id="taps-value">0</div>
+        </div>
       </div>
 
-      <p class="hint">Здесь позже появятся достижения, реферальный код и настройки.</p>
+      <p class="hint">Профиль берёт имя и ID из Telegram WebApp (если открыт внутри бота), а прогресс — из твоего локального сохранения.</p>
     </section>
 
   </main>
 
-  <!-- НИЖНЕЕ МЕНЮ -->
+  <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="bottom-btn active" data-screen="games">HamsterVerse</button>
     <button class="bottom-btn" data-screen="wallet">Wallet</button>
