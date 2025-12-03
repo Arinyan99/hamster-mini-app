@@ -1,8 +1,9 @@
 window.addEventListener("DOMContentLoaded", () => {
   // === Telegram WebApp ===
   const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-// URL твоего API (пока пусто или локальный, потом подставим прод-URL)
-const API_BASE = ""; // например: "http://127.0.0.1:8000"
+
+  // URL твоего API (когда появится backend — сюда вставишь адрес, пока оставь пустым)
+  const API_BASE = ""; // например: "https://my-hamster-backend.onrender.com"
 
   let userId = "local";
   if (tg) {
@@ -42,6 +43,22 @@ const API_BASE = ""; // например: "http://127.0.0.1:8000"
 
   let state = { ...DEFAULT_STATE };
 
+  // === UPGRADE LOGIC ===
+  const UPGRADE_COSTS = {
+    miner: 5000,
+    gym: 2000,
+    farm: 3000,
+  };
+
+  function applyUpgrades() {
+    state.pph = 0;
+    state.tapValue = 1;
+    state.maxEnergy = state.upgrades.farm ? 150 : 100;
+
+    if (state.upgrades.miner) state.pph += 200;
+    if (state.upgrades.gym) state.tapValue = 2;
+  }
+
   // --- Локальное хранилище (fallback) ---
   function loadFromLocal() {
     try {
@@ -71,7 +88,7 @@ const API_BASE = ""; // например: "http://127.0.0.1:8000"
         console.error("CloudStorage.getItem error:", err);
         return;
       }
-      if (!value) return; // ещё ничего не сохранено
+      if (!value) return;
 
       try {
         const obj = JSON.parse(value);
@@ -94,18 +111,61 @@ const API_BASE = ""; // например: "http://127.0.0.1:8000"
     });
   }
 
+  // === Работа с внешним API (пока опционально) ===
+  async function apiLoadState() {
+    if (!API_BASE) return; // если URL не задан — ничего не делаем
+
+    try {
+      const res = await fetch(`${API_BASE}/state/${userId}`);
+      if (!res.ok) return;
+
+      const json = await res.json();
+      if (json && Object.keys(json).length > 0) {
+        state = { ...DEFAULT_STATE, ...json };
+        applyUpgrades();
+        updateAllUI();
+        console.log("state loaded from API");
+      }
+    } catch (e) {
+      console.error("apiLoadState error:", e);
+    }
+  }
+
+  async function apiSaveState() {
+    if (!API_BASE) return;
+
+    try {
+      await fetch(`${API_BASE}/state`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          data: state,
+        }),
+      });
+      console.log("state saved to API");
+    } catch (e) {
+      console.error("apiSaveState error:", e);
+    }
+  }
+
   function saveState() {
     saveToLocal();
     saveToCloud();
+    apiSaveState();
   }
 
   // --- Инициализация состояния ---
   (function initState() {
-    // 1) пробуем подгрузить локально (для браузера или резерв)
-    loadFromLocal();
-    // 2) поверх — подгружаем из облака (для Telegram Mini App)
-    loadFromCloud();
+    loadFromLocal();   // локальное
+    applyUpgrades();
+    updateAllUI();     // чтобы сразу что-то показать
+
+    loadFromCloud();   // поверх — CloudStorage
+    apiLoadState();    // и, при наличии backend, поверх — API
   })();
+
+  // === ЛОГИКА ИГРЫ ===
 
   // Регенерация энергии (1 ед. / 5 секунд)
   function regenEnergy() {
@@ -118,7 +178,6 @@ const API_BASE = ""; // например: "http://127.0.0.1:8000"
     }
   }
 
-  // LEVEL = по монетам
   function computeLevel() {
     return 1 + Math.floor(state.coins / 5000);
   }
@@ -134,25 +193,36 @@ const API_BASE = ""; // например: "http://127.0.0.1:8000"
   }
 
   function updateWalletUI() {
-    document.getElementById("coins-value").textContent = formatNumber(state.coins);
-    document.getElementById("energy-value").textContent =
-      state.energy + " / " + state.maxEnergy;
-    document.getElementById("pph-value").textContent =
-      formatNumber(state.pph) + " / hour";
+    const coinsEl = document.getElementById("coins-value");
+    const energyEl = document.getElementById("energy-value");
+    const pphEl = document.getElementById("pph-value");
+    if (!coinsEl || !energyEl || !pphEl) return;
+
+    coinsEl.textContent = formatNumber(state.coins);
+    energyEl.textContent = state.energy + " / " + state.maxEnergy;
+    pphEl.textContent = formatNumber(state.pph) + " / hour";
   }
 
   function updateChargeUI() {
-    document.getElementById("charge-coins").textContent = formatNumber(state.coins);
-    document.getElementById("charge-energy").textContent =
-      state.energy + " / " + state.maxEnergy;
-    document.getElementById("tap-value").textContent = "+" + state.tapValue;
+    const coinsEl = document.getElementById("charge-coins");
+    const energyEl = document.getElementById("charge-energy");
+    const tapVal = document.getElementById("tap-value");
+    if (!coinsEl || !energyEl || !tapVal) return;
+
+    coinsEl.textContent = formatNumber(state.coins);
+    energyEl.textContent = state.energy + " / " + state.maxEnergy;
+    tapVal.textContent = "+" + state.tapValue;
   }
 
   function updateProfileUI() {
-    document.getElementById("level-value").textContent = computeLevel();
-    document.getElementById("days-value").textContent = computeDays();
-    document.getElementById("taps-value").textContent =
-      formatNumber(state.totalTaps);
+    const lvlEl = document.getElementById("level-value");
+    const daysEl = document.getElementById("days-value");
+    const tapsEl = document.getElementById("taps-value");
+    if (!lvlEl || !daysEl || !tapsEl) return;
+
+    lvlEl.textContent = computeLevel();
+    daysEl.textContent = computeDays();
+    tapsEl.textContent = formatNumber(state.totalTaps);
   }
 
   function updateAllUI() {
@@ -208,25 +278,30 @@ const API_BASE = ""; // например: "http://127.0.0.1:8000"
     });
   });
 
-  // === UPGRADES ===
-  const UPGRADE_COSTS = {
-    miner: 5000,
-    gym: 2000,
-    farm: 3000,
-  };
+  // === TAP BUTTON ===
+  const tapBtn = document.getElementById("tap-button");
+  if (tapBtn) {
+    tapBtn.addEventListener("click", () => {
+      regenEnergy();
+      if (state.energy <= 0) {
+        alert("Недостаточно энергии. Подожди немного — она восстановится.");
+        return;
+      }
 
-  function applyUpgrades() {
-    state.pph = 0;
-    state.tapValue = 1;
-    state.maxEnergy = state.upgrades.farm ? 150 : 100;
+      state.energy -= 1;
+      state.coins += state.tapValue;
+      state.totalTaps += 1;
+      state.lastEnergyTs = Date.now();
+      saveState();
+      updateAllUI();
 
-    if (state.upgrades.miner) state.pph += 200;
-    if (state.upgrades.gym) state.tapValue = 2;
+      if (tg && tg.HapticFeedback) {
+        tg.HapticFeedback.impactOccurred("medium");
+      }
+    });
   }
 
-  applyUpgrades();
-
-  // Кнопки апгрейдов
+  // === UPGRADES ===
   document.querySelectorAll(".upgrade-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const key = btn.dataset.upgrade;
@@ -271,29 +346,6 @@ const API_BASE = ""; // например: "http://127.0.0.1:8000"
     }
   });
 
-  // === TAP BUTTON ===
-  const tapBtn = document.getElementById("tap-button");
-  if (tapBtn) {
-    tapBtn.addEventListener("click", () => {
-      regenEnergy();
-      if (state.energy <= 0) {
-        alert("Недостаточно энергии. Подожди немного — она восстановится.");
-        return;
-      }
-
-      state.energy -= 1;
-      state.coins += state.tapValue;
-      state.totalTaps += 1;
-      state.lastEnergyTs = Date.now();
-      saveState();
-      updateAllUI();
-
-      if (tg && tg.HapticFeedback) {
-        tg.HapticFeedback.impactOccurred("medium");
-      }
-    });
-  }
-
   // Клик по карточкам игр (демо)
   document.querySelectorAll(".card").forEach((card) => {
     card.addEventListener("click", () => {
@@ -318,4 +370,3 @@ const API_BASE = ""; // например: "http://127.0.0.1:8000"
   // Первичная отрисовка
   updateAllUI();
 });
-
