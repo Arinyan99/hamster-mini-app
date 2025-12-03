@@ -1,8 +1,9 @@
 window.addEventListener("DOMContentLoaded", () => {
   // === Telegram WebApp ===
+  const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+
   let userId = "local";
-  if (window.Telegram && window.Telegram.WebApp) {
-    const tg = window.Telegram.WebApp;
+  if (tg) {
     tg.expand();
     tg.setHeaderColor("#0b1020");
     tg.setBackgroundColor("#0b1020");
@@ -19,7 +20,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // === STATE (локальный прогресс) ===
+  // === STATE (прогресс игрока) ===
   const STORAGE_KEY = "hv_state_" + userId;
   const DEFAULT_STATE = {
     coins: 0,
@@ -32,32 +33,77 @@ window.addEventListener("DOMContentLoaded", () => {
     upgrades: {
       miner: false,
       gym: false,
-      farm: false
+      farm: false,
     },
-    createdAt: Date.now()
+    createdAt: Date.now(),
   };
 
-  let state = loadState();
+  let state = { ...DEFAULT_STATE };
 
-  function loadState() {
+  // --- Локальное хранилище (fallback) ---
+  function loadFromLocal() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { ...DEFAULT_STATE };
+      if (!raw) return;
       const obj = JSON.parse(raw);
-      return { ...DEFAULT_STATE, ...obj };
+      state = { ...DEFAULT_STATE, ...obj };
     } catch (e) {
-      console.error("loadState error", e);
-      return { ...DEFAULT_STATE };
+      console.error("loadFromLocal error", e);
     }
   }
 
-  function saveState() {
+  function saveToLocal() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (e) {
-      console.error("saveState error", e);
+      console.error("saveToLocal error", e);
     }
   }
+
+  // --- CloudStorage Telegram ---
+  function loadFromCloud() {
+    if (!tg || !tg.CloudStorage || !tg.CloudStorage.getItem) return;
+
+    tg.CloudStorage.getItem("hv_state", (err, value) => {
+      if (err) {
+        console.error("CloudStorage.getItem error:", err);
+        return;
+      }
+      if (!value) return; // ещё ничего не сохранено
+
+      try {
+        const obj = JSON.parse(value);
+        state = { ...DEFAULT_STATE, ...obj };
+        applyUpgrades();
+        updateAllUI();
+      } catch (e) {
+        console.error("parse cloud state error", e);
+      }
+    });
+  }
+
+  function saveToCloud() {
+    if (!tg || !tg.CloudStorage || !tg.CloudStorage.setItem) return;
+
+    tg.CloudStorage.setItem("hv_state", JSON.stringify(state), (err, stored) => {
+      if (err) {
+        console.error("CloudStorage.setItem error:", err);
+      }
+    });
+  }
+
+  function saveState() {
+    saveToLocal();
+    saveToCloud();
+  }
+
+  // --- Инициализация состояния ---
+  (function initState() {
+    // 1) пробуем подгрузить локально (для браузера или резерв)
+    loadFromLocal();
+    // 2) поверх — подгружаем из облака (для Telegram Mini App)
+    loadFromCloud();
+  })();
 
   // Регенерация энергии (1 ед. / 5 секунд)
   function regenEnergy() {
@@ -65,7 +111,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const diff = Math.max(0, now - (state.lastEnergyTs || now));
     const gained = Math.floor(diff / 5000);
     if (gained > 0) {
-      state.lastEnergyTs = state.lastEnergyTs + gained * 5000;
+      state.lastEnergyTs = (state.lastEnergyTs || now) + gained * 5000;
       state.energy = Math.min(state.maxEnergy, state.energy + gained);
     }
   }
@@ -119,19 +165,19 @@ window.addEventListener("DOMContentLoaded", () => {
   const pages = document.querySelectorAll(".page");
 
   function showPage(id) {
-    pages.forEach(p => p.classList.remove("active"));
+    pages.forEach((p) => p.classList.remove("active"));
     const page = document.getElementById(id);
     if (page) page.classList.add("active");
   }
 
   function setTabActive(tabId) {
-    tabs.forEach(t => {
+    tabs.forEach((t) => {
       if (t.dataset.tab === tabId) t.classList.add("active");
       else t.classList.remove("active");
     });
   }
 
-  tabs.forEach(tab => {
+  tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       const target = tab.dataset.tab;
       setTabActive(target);
@@ -140,11 +186,11 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   const bottomButtons = document.querySelectorAll(".bottom-btn");
-  bottomButtons.forEach(btn => {
+  bottomButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const screen = btn.dataset.screen;
 
-      bottomButtons.forEach(b => b.classList.remove("active"));
+      bottomButtons.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
 
       if (screen === "games") {
@@ -160,48 +206,26 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // === TAP BUTTON ===
-  const tapBtn = document.getElementById("tap-button");
-  if (tapBtn) {
-    tapBtn.addEventListener("click", () => {
-      regenEnergy();
-      if (state.energy <= 0) {
-        alert("Недостаточно энергии. Подожди немного — она восстановится.");
-        return;
-      }
-
-      state.energy -= 1;
-      state.coins += state.tapValue;
-      state.totalTaps += 1;
-      state.lastEnergyTs = Date.now();
-      saveState();
-      updateAllUI();
-
-      if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.HapticFeedback.impactOccurred("medium");
-      }
-    });
-  }
-
   // === UPGRADES ===
   const UPGRADE_COSTS = {
     miner: 5000,
     gym: 2000,
-    farm: 3000
+    farm: 3000,
   };
 
   function applyUpgrades() {
     state.pph = 0;
+    state.tapValue = 1;
+    state.maxEnergy = state.upgrades.farm ? 150 : 100;
+
     if (state.upgrades.miner) state.pph += 200;
     if (state.upgrades.gym) state.tapValue = 2;
-    else state.tapValue = 1;
-    if (state.upgrades.farm) state.maxEnergy = 150;
-    else state.maxEnergy = 100;
   }
 
   applyUpgrades();
 
-  document.querySelectorAll(".upgrade-btn").forEach(btn => {
+  // Кнопки апгрейдов
+  document.querySelectorAll(".upgrade-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const key = btn.dataset.upgrade;
       if (!key) return;
@@ -223,8 +247,8 @@ window.addEventListener("DOMContentLoaded", () => {
       saveState();
       updateAllUI();
 
-      if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+      if (tg && tg.HapticFeedback) {
+        tg.HapticFeedback.notificationOccurred("success");
       }
 
       btn.textContent = "Owned";
@@ -233,8 +257,8 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Обновить подписи "Owned" при загрузке
-  ["miner", "gym", "farm"].forEach(key => {
+  // Обновляем кнопки "Owned" при загрузке
+  ["miner", "gym", "farm"].forEach((key) => {
     if (state.upgrades[key]) {
       const btn = document.querySelector(`.upgrade-btn[data-upgrade="${key}"]`);
       if (btn) {
@@ -245,8 +269,31 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // === TAP BUTTON ===
+  const tapBtn = document.getElementById("tap-button");
+  if (tapBtn) {
+    tapBtn.addEventListener("click", () => {
+      regenEnergy();
+      if (state.energy <= 0) {
+        alert("Недостаточно энергии. Подожди немного — она восстановится.");
+        return;
+      }
+
+      state.energy -= 1;
+      state.coins += state.tapValue;
+      state.totalTaps += 1;
+      state.lastEnergyTs = Date.now();
+      saveState();
+      updateAllUI();
+
+      if (tg && tg.HapticFeedback) {
+        tg.HapticFeedback.impactOccurred("medium");
+      }
+    });
+  }
+
   // Клик по карточкам игр (демо)
-  document.querySelectorAll(".card").forEach(card => {
+  document.querySelectorAll(".card").forEach((card) => {
     card.addEventListener("click", () => {
       const title = card.querySelector(".card-title").textContent;
       alert("Откроется игра: " + title);
@@ -260,8 +307,8 @@ window.addEventListener("DOMContentLoaded", () => {
       regenEnergy();
       saveState();
       updateAllUI();
-      if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+      if (tg && tg.HapticFeedback) {
+        tg.HapticFeedback.notificationOccurred("success");
       }
     });
   }
