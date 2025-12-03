@@ -179,6 +179,10 @@ p {
   border: 1px solid rgba(255,255,255,0.06);
 }
 
+.stat-card.small {
+  flex: 1;
+}
+
 .stat-label {
   font-size: 11px;
   opacity: 0.7;
@@ -245,6 +249,87 @@ p {
 .profile-id {
   font-size: 11px;
   opacity: 0.7;
+}
+
+/* charge */
+
+.charge-top {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.tap-button {
+  margin-top: 16px;
+  width: 100%;
+  border-radius: 999px;
+  border: none;
+  padding: 20px 14px;
+  background: radial-gradient(circle at top, #ff8a3c, #f97316);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(0,0,0,0.6);
+}
+
+.tap-button span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.section-subtitle {
+  margin-top: 18px;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+/* upgrades */
+
+.upgrades-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upgrade-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(15,21,43,0.95);
+  border-radius: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.upgrade-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.upgrade-sub {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.upgrade-right {
+  text-align: right;
+}
+
+.upgrade-cost {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.upgrade-btn {
+  border-radius: 999px;
+  border: none;
+  padding: 4px 10px;
+  font-size: 11px;
+  background: #22c55e;
+  color: #fff;
+  cursor: pointer;
 }
 
 /* bottom nav */
