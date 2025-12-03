@@ -35,3 +35,15 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     });
 });
+// Переключение экранов
+function openScreen(screen) {
+    const screens = document.querySelectorAll(".screen");
+    screens.forEach(s => s.classList.add("hidden"));
+
+    const activeScreen = document.getElementById(`screen-${screen}`);
+    if (activeScreen) activeScreen.classList.remove("hidden");
+
+    // Активная кнопка
+    document.querySelectorAll(".bottom-btn").forEach(btn => btn.classList.remove("active"));
+    document.querySelector(`#btn-${screen}`).classList.add("active");
+}
