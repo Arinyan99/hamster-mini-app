@@ -195,3 +195,19 @@ p {
     background: #ff8a3c;
     color: #fff;
 }
+.screen {
+    padding: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+.screen-title {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.screen-text {
+    opacity: 0.8;
+}
