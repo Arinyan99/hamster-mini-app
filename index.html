@@ -1,102 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>HamsterVerse MiniApp</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>HamsterVerse MiniApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Стили -->
-    <link rel="stylesheet" href="style.css">
-
-    <!-- Telegram WebApp JS -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 
 <div class="app">
 
-    <!-- Верхняя панель -->
-    <header class="topbar">
-        <div class="topbar-title">HamsterVerse</div>
-        <div class="topbar-sub">Mini App</div>
-    </header>
+  <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+  <header class="topbar">
+    <div class="topbar-title">HamsterVerse</div>
+    <div class="topbar-sub">Mini App</div>
+  </header>
 
-    <!-- Табы сверху (Games / Social) -->
-    <div class="tabs">
-        <button class="tab active" data-tab="games">Games</button>
-        <button class="tab" data-tab="social">Social media</button>
-    </div>
+  <!-- ТАБЫ GAMES / SOCIAL -->
+  <div class="tabs">
+    <button class="tab active" data-tab="games">Games</button>
+    <button class="tab" data-tab="social">Social media</button>
+  </div>
 
-    <!-- Контент -->
-    <main class="content">
+  <!-- ОСНОВНОЙ КОНТЕНТ -->
+  <main class="content">
 
-        <!-- Страница Games -->
-        <section id="games" class="page active">
-            <div class="banner">
-                <div class="banner-title">BitQuest</div>
-                <div class="banner-sub">Enter the First PvP Tournament!</div>
-            </div>
+    <!-- СТРАНИЦА GAMES -->
+    <section id="games" class="page active">
+      <div class="banner">
+        <div class="banner-title">BitQuest</div>
+        <div class="banner-sub">Enter the First PvP Tournament!</div>
+      </div>
 
-            <div class="cards">
-                <div class="card">
-                    <div class="card-title">Hamster GameDev Heroes</div>
-                    <div class="card-sub">Build & code your game</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Hamster King</div>
-                    <div class="card-sub">Rule your crypto kingdom</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Hamster Gym</div>
-                    <div class="card-sub">Pump stats & profit</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Fight Club</div>
-                    <div class="card-sub">1v1 PvP battles</div>
-                </div>
-            </div>
-        </section>
+      <div class="cards">
+        <div class="card">
+          <div class="card-title">Hamster GameDev Heroes</div>
+          <div class="card-sub">Build & code your game</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Hamster King</div>
+          <div class="card-sub">Rule your crypto kingdom</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Hamster Gym</div>
+          <div class="card-sub">Pump stats & profit</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Fight Club</div>
+          <div class="card-sub">1v1 PvP battles</div>
+        </div>
+      </div>
+    </section>
 
-        <!-- Страница Social -->
-        <section id="social" class="page">
-            <h2>Social media</h2>
-            <p>Тут можно сделать ссылки на твой Telegram-канал, чат, X, YouTube и т.п.</p>
+    <!-- СТРАНИЦА SOCIAL -->
+    <section id="social" class="page">
+      <h2>Social media</h2>
+      <p>Здесь можно разместить ссылки на твой Telegram-канал, чат, X, YouTube и т.п.</p>
 
-            <div class="social-links">
-                <button class="social-btn">💬 Telegram</button>
-                <button class="social-btn">🐦 X / Twitter</button>
-                <button class="social-btn">▶️ YouTube</button>
-            </div>
-        </section>
+      <div class="social-links">
+        <button class="social-btn">💬 Telegram</button>
+        <button class="social-btn">🐦 X / Twitter</button>
+        <button class="social-btn">▶️ YouTube</button>
+      </div>
+    </section>
 
-    </main>
+    <!-- СТРАНИЦА WALLET -->
+    <section id="wallet" class="page">
+      <h2>Wallet</h2>
 
-    <!-- Нижнее меню, как в Hamster Kombat -->
-    <nav class="bottom-nav">
-  <button class="bottom-btn active" id="btn-games" onclick="openScreen('games')">
-    <span>HamsterVerse</span>
-  </button>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">💰 Coins</div>
+          <div class="stat-value" id="coins-value">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">⚡ Energy</div>
+          <div class="stat-value" id="energy-value">100 / 100</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">⏳ PPH</div>
+          <div class="stat-value" id="pph-value">0 / hour</div>
+        </div>
+      </div>
 
-  <button class="bottom-btn" id="btn-wallet" onclick="openScreen('wallet')">
-    <span>Wallet</span>
-  </button>
+      <button class="primary-btn" id="refresh-btn">🔄 Обновить данные</button>
+      <p class="hint">Пока данные тестовые. Потом подключим реальные значения из бота.</p>
+    </section>
 
-  <button class="bottom-btn" id="btn-charge" onclick="openScreen('games')">
-    <span>Charge</span>
-  </button>
+    <!-- СТРАНИЦА PROFILE -->
+    <section id="profile" class="page">
+      <h2>Profile</h2>
 
-  <button class="bottom-btn" id="btn-profile" onclick="openScreen('profile')">
-    <span>Profile</span>
-  </button>
-</nav>
-<!-- Экран Wallet -->
-<div id="screen-wallet" class="screen hidden">
-    <h2 class="screen-title">Wallet</h2>
-    <p class="screen-text">Здесь будет баланс, монеты и транзакции.</p>
+      <div class="profile-card">
+        <div class="avatar">🐹</div>
+        <div class="profile-info">
+          <div class="profile-name" id="profile-name">Player</div>
+          <div class="profile-id" id="profile-id">ID: unknown</div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">🏆 Level</div>
+          <div class="stat-value" id="level-value">1</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">📅 Days in game</div>
+          <div class="stat-value" id="days-value">1</div>
+        </div>
+      </div>
+
+      <p class="hint">Здесь позже появятся достижения, реферальный код и настройки.</p>
+    </section>
+
+  </main>
+
+  <!-- НИЖНЕЕ МЕНЮ -->
+  <nav class="bottom-nav">
+    <button class="bottom-btn active" data-screen="games">HamsterVerse</button>
+    <button class="bottom-btn" data-screen="wallet">Wallet</button>
+    <button class="bottom-btn" data-screen="charge">Charge</button>
+    <button class="bottom-btn" data-screen="profile">Profile</button>
+  </nav>
+
 </div>
 
-<!-- Экран Profile -->
-<div id="screen-profile" class="screen hidden">
-    <h2 class="screen-title">Profile</h2>
-    <p class="screen-text">Здесь будет информация пользователя.</p>
-</div>
+<script src="app.js"></script>
+</body>
+</html>
