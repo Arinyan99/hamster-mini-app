@@ -73,24 +73,20 @@
 
     <!-- Нижнее меню, как в Hamster Kombat -->
     <nav class="bottom-nav">
-        <button class="bottom-btn active">
-            <span>HamsterVerse</span>
-        </button>
-        <button class="bottom-btn">
-            <span>Wallet</span>
-        </button>
-        <button class="bottom-btn">
-            <span>Charge</span>
-        </button>
-        <button class="bottom-btn">
-            <span>Profile</span>
-        </button>
-    </nav>
+  <button class="bottom-btn active" id="btn-games" onclick="openScreen('games')">
+    <span>HamsterVerse</span>
+  </button>
 
-</div>
+  <button class="bottom-btn" id="btn-wallet" onclick="openScreen('wallet')">
+    <span>Wallet</span>
+  </button>
 
-<!-- Скрипт -->
-<script src="app.js"></script>
+  <button class="bottom-btn" id="btn-charge" onclick="openScreen('games')">
+    <span>Charge</span>
+  </button>
 
-</body>
-</html>
+  <button class="bottom-btn" id="btn-profile" onclick="openScreen('profile')">
+    <span>Profile</span>
+  </button>
+</nav>
+
