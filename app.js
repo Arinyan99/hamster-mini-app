@@ -1,6 +1,8 @@
 window.addEventListener("DOMContentLoaded", () => {
   // === Telegram WebApp ===
   const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+// URL твоего API (пока пусто или локальный, потом подставим прод-URL)
+const API_BASE = ""; // например: "http://127.0.0.1:8000"
 
   let userId = "local";
   if (tg) {
@@ -316,3 +318,4 @@ window.addEventListener("DOMContentLoaded", () => {
   // Первичная отрисовка
   updateAllUI();
 });
+
