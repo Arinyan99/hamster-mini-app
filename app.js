@@ -1,49 +1,89 @@
-// Инициализация Telegram WebApp (если открыто в Telegram)
 window.addEventListener("DOMContentLoaded", () => {
-    if (window.Telegram && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
-        tg.expand();               // разворачиваем на весь экран
-        tg.setHeaderColor("#0b1020");
-        tg.setBackgroundColor("#0b1020");
-        tg.ready();
+  // Telegram WebApp интеграция
+  if (window.Telegram && window.Telegram.WebApp) {
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.setHeaderColor("#0b1020");
+    tg.setBackgroundColor("#0b1020");
+    tg.ready();
+
+    const user = tg.initDataUnsafe?.user;
+    if (user) {
+      const name = (user.first_name || "") + " " + (user.last_name || "");
+      const profileName = document.getElementById("profile-name");
+      const profileId = document.getElementById("profile-id");
+      if (profileName) profileName.textContent = name.trim() || "Player";
+      if (profileId) profileId.textContent = "ID: " + user.id;
     }
+  }
 
-    // Логика табов
-    const tabs = document.querySelectorAll(".tab");
-    const pages = document.querySelectorAll(".page");
+  const tabs = document.querySelectorAll(".tab");
+  const pages = document.querySelectorAll(".page");
 
-    tabs.forEach(tab => {
-        tab.addEventListener("click", () => {
-            const target = tab.dataset.tab;
+  function showPage(id) {
+    pages.forEach(p => p.classList.remove("active"));
+    const page = document.getElementById(id);
+    if (page) page.classList.add("active");
+  }
 
-            tabs.forEach(t => t.classList.remove("active"));
-            pages.forEach(p => p.classList.remove("active"));
-
-            tab.classList.add("active");
-            document.getElementById(target).classList.add("active");
-        });
+  function setTabActive(tabId) {
+    tabs.forEach(t => {
+      if (t.dataset.tab === tabId) t.classList.add("active");
+      else t.classList.remove("active");
     });
+  }
 
-    // Клик по карточке — пока просто алерт (потом можно сделать переход в игру / экран)
-    document.querySelectorAll(".card").forEach(card => {
-        card.addEventListener("click", () => {
-            const title = card.querySelector(".card-title").textContent;
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.HapticFeedback.impactOccurred("light");
-            }
-            alert("Откроется игра: " + title);
-        });
+  // Верхние табы (Games / Social)
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.tab;
+      setTabActive(target);
+      showPage(target);
     });
+  });
+
+  // Нижнее меню (HamsterVerse / Wallet / Charge / Profile)
+  const bottomButtons = document.querySelectorAll(".bottom-btn");
+  bottomButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const screen = btn.dataset.screen;
+
+      bottomButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      if (screen === "games" || screen === "charge") {
+        showPage("games");
+        setTabActive("games");
+      } else if (screen === "wallet") {
+        showPage("wallet");
+      } else if (screen === "profile") {
+        showPage("profile");
+      }
+    });
+  });
+
+  // Клик по карточке игры
+  document.querySelectorAll(".card").forEach(card => {
+    card.addEventListener("click", () => {
+      const title = card.querySelector(".card-title").textContent;
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred("light");
+      }
+      alert("Откроется игра: " + title);
+    });
+  });
+
+  // Демонстрация обновления кошелька
+  const refreshBtn = document.getElementById("refresh-btn");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", () => {
+      document.getElementById("coins-value").textContent = "123 456";
+      document.getElementById("energy-value").textContent = "73 / 100";
+      document.getElementById("pph-value").textContent = "900 / hour";
+
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+      }
+    });
+  }
 });
-// Переключение экранов
-function openScreen(screen) {
-    const screens = document.querySelectorAll(".screen");
-    screens.forEach(s => s.classList.add("hidden"));
-
-    const activeScreen = document.getElementById(`screen-${screen}`);
-    if (activeScreen) activeScreen.classList.remove("hidden");
-
-    // Активная кнопка
-    document.querySelectorAll(".bottom-btn").forEach(btn => btn.classList.remove("active"));
-    document.querySelector(`#btn-${screen}`).classList.add("active");
-}
