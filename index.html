@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HamsterVerse MiniApp</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Стили -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Telegram WebApp JS -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+<div class="app">
+
+    <!-- Верхняя панель -->
+    <header class="topbar">
+        <div class="topbar-title">HamsterVerse</div>
+        <div class="topbar-sub">Mini App</div>
+    </header>
+
+    <!-- Табы сверху (Games / Social) -->
+    <div class="tabs">
+        <button class="tab active" data-tab="games">Games</button>
+        <button class="tab" data-tab="social">Social media</button>
+    </div>
+
+    <!-- Контент -->
+    <main class="content">
+
+        <!-- Страница Games -->
+        <section id="games" class="page active">
+            <div class="banner">
+                <div class="banner-title">BitQuest</div>
+                <div class="banner-sub">Enter the First PvP Tournament!</div>
+            </div>
+
+            <div class="cards">
+                <div class="card">
+                    <div class="card-title">Hamster GameDev Heroes</div>
+                    <div class="card-sub">Build & code your game</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Hamster King</div>
+                    <div class="card-sub">Rule your crypto kingdom</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Hamster Gym</div>
+                    <div class="card-sub">Pump stats & profit</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Fight Club</div>
+                    <div class="card-sub">1v1 PvP battles</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Страница Social -->
+        <section id="social" class="page">
+            <h2>Social media</h2>
+            <p>Тут можно сделать ссылки на твой Telegram-канал, чат, X, YouTube и т.п.</p>
+
+            <div class="social-links">
+                <button class="social-btn">💬 Telegram</button>
+                <button class="social-btn">🐦 X / Twitter</button>
+                <button class="social-btn">▶️ YouTube</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Нижнее меню, как в Hamster Kombat -->
+    <nav class="bottom-nav">
+        <button class="bottom-btn active">
+            <span>HamsterVerse</span>
+        </button>
+        <button class="bottom-btn">
+            <span>Wallet</span>
+        </button>
+        <button class="bottom-btn">
+            <span>Charge</span>
+        </button>
+        <button class="bottom-btn">
+            <span>Profile</span>
+        </button>
+    </nav>
+
+</div>
+
+<!-- Скрипт -->
+<script src="app.js"></script>
+
+</body>
+</html>
