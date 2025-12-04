@@ -410,4 +410,185 @@ p {
   opacity: 0.7;
   cursor: default;
 }
+/* upgrades list */
+
+.upgrade-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.upgrade-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(15, 21, 43, 0.95);
+  border-radius: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.upgrade-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.upgrade-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.upgrade-desc {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.upgrade-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.upgrade-price {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.upgrade-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: #22c55e;
+  color: #fff;
+  cursor: pointer;
+}
+
+.upgrade-btn[disabled] {
+  background: #4b5563;
+  cursor: default;
+}
+
+/* tap button */
+
+.tap-btn {
+  margin-top: 16px;
+  width: 100%;
+  border: none;
+  border-radius: 24px;
+  padding: 18px 12px;
+  background: linear-gradient(90deg, #f97316, #ec4899);
+  color: #fff;
+  text-align: center;
+  cursor: pointer;
+}
+
+.tap-label {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.tap-sub {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* profile */
+
+.profile-header-card {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(15, 21, 43, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.profile-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.profile-id {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.profile-level {
+  text-align: right;
+}
+
+.profile-level-label {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.profile-level-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.profile-stats {
+  margin-top: 10px;
+}
+
+/* achievements */
+
+.ach-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ach-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(15, 21, 43, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ach-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ach-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ach-desc {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.ach-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #4b5563;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.ach-row.unlocked .ach-badge {
+  background: #22c55e;
+}
+
+.ach-row.unlocked {
+  border-color: rgba(34, 197, 94, 0.6);
+}
+
 
