@@ -1,11 +1,4 @@
-window.addEventListener("DOMContentLoaded", () => {
-  // === НАСТРОЙКИ АДМИНА ===
-  // TODO: сюда подставь СВОЙ числовой Telegram ID, например "123456789"
-  const ADMIN_ID = "1306116066";
-  // TODO: сюда подставь СВОЙ username без @, например "Arinyan99"
-  const OWNER_USERNAME = "netysil8888";
-
-  // ===================== Telegram WebApp =====================
+// ===================== Telegram WebApp =====================
 const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 if (tg) {
   tg.expand();
@@ -301,4 +294,3 @@ document.addEventListener("DOMContentLoaded", () => {
   // Стартовый экран (HamsterVerse / Charge)
   switchScreen("screen-hamsterverse");
 });
-
