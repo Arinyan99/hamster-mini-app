@@ -232,32 +232,28 @@ function buyUpgradeFarm() {
 
 // ===================== НАВИГАЦИЯ ПО ЭКРАНАМ =====================
 
-// предполагаем такие id:
-// экраны:  screen-hamsterverse, screen-wallet, screen-charge, screen-players, screen-profile
-// кнопки: nav-hamsterverse,   nav-wallet,   nav-charge,   nav-players,   nav-profile
-
-const NAV_MAP = {
-  "nav-hamsterverse": "screen-hamsterverse",
-  "nav-wallet": "screen-wallet",
-  "nav-charge": "screen-charge",
-  "nav-players": "screen-players",
-  "nav-profile": "screen-profile",
-};
+// порядок экранов снизу слева направо
+const SCREENS_ORDER = [
+  "screen-hamsterverse", // 1-я кнопка
+  "screen-wallet",       // 2-я
+  "screen-charge",       // 3-я
+  "screen-players",      // 4-я
+  "screen-profile",      // 5-я
+];
 
 function switchScreen(screenId) {
-  // переключаем экраны
-  const screens = document.querySelectorAll("[id^='screen-']");
+  // переключаем экраны (ожидаем, что всем экранам задан класс .screen)
+  const screens = document.querySelectorAll(".screen");
   screens.forEach((el) => {
     el.classList.toggle("screen-active", el.id === screenId);
   });
 
-  // подсвечиваем нижние кнопки
-  const navButtons = document.querySelectorAll(".bottom-btn");
-  navButtons.forEach((btn) => {
-    const target = NAV_MAP[btn.id];
-    const isActive = target === screenId;
+  // подсвечиваем нижние кнопки (ожидаем .bottom-nav .bottom-btn)
+  const navButtons = document.querySelectorAll(".bottom-nav .bottom-btn");
+  navButtons.forEach((btn, index) => {
+    const isActive = SCREENS_ORDER[index] === screenId;
     btn.classList.toggle("bottom-btn--active", isActive);
-    btn.classList.toggle("active", isActive); // вдруг используется старый класс
+    btn.classList.toggle("active", isActive);
   });
 }
 
@@ -271,12 +267,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Восстановление энергии раз в минуту
   setInterval(tickEnergy, 60 * 1000);
 
-  // Навигация по нижним кнопкам (HamsterVerse / Wallet / Charge / Players / Profile)
-  Object.entries(NAV_MAP).forEach(([btnId, screenId]) => {
-    const btn = document.getElementById(btnId);
-    if (btn) {
-      btn.addEventListener("click", () => switchScreen(screenId));
-    }
+  // Навигация по нижним кнопкам по их порядку
+  const navButtons = document.querySelectorAll(".bottom-nav .bottom-btn");
+  navButtons.forEach((btn, index) => {
+    const screenId = SCREENS_ORDER[index];
+    if (!screenId) return;
+    btn.addEventListener("click", () => switchScreen(screenId));
   });
 
   // TAP
