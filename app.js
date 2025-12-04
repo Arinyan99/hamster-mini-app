@@ -4,29 +4,49 @@ if (tg) {
   tg.expand();
 }
 
-// ===================== ИГРОВОЙ СТЕЙТ =====================
+// ===================== КОНСТАНТЫ =====================
+const STORAGE_KEY = "hamsterverse_state_v4";
 
-const STORAGE_KEY = "hamsterverse_state_v3";
+// ID твоего аккаунта в Telegram (чтобы только ты видел экран Players)
+const ADMIN_ID = 1306116066; // если что — можно поменять
 
+const DAILY_BONUS_BASE = 1000;       // базовый ежедневный бонус
+const BASE_ENERGY_REGEN = 5;         // энергия в минуту
+const REGEN_BONUS_PER_LEVEL = 3;     // +3 энергии/мин за апгрейд regen
+const LUCKY_CHANCE = 0.05;           // 5% шанс x10 награды за тап
+
+// ===================== СТЕЙТ =====================
 const DEFAULT_STATE = {
   coins: 0,
   energy: 100,
   maxEnergy: 100,
-  pph: 0,             // пассивный доход (монет в час)
-  tapPower: 1,        // монет за тап
+  pph: 0,
+  tapPower: 1,
+  totalTaps: 0,
+
   upgrades: {
     miner: false,
     gym: false,
     farm: false,
+    tap2: false,
+    regen: false,
+    crypto: false,
+    lucky: false,
   },
+
   lastEnergyUpdate: Date.now(),
+
+  // daily bonus
   lastBonusTime: 0,
+  bonusStreak: 0,
+
   createdAt: Date.now(),
 };
 
 let state = { ...DEFAULT_STATE };
+let isAdmin = false;
 
-// ===================== ЗАГРУЗКА / СОХРАНЕНИЕ =====================
+// ===================== ХЕЛПЕРЫ С ХРАНИЛИЩЕМ =====================
 
 function loadFromLocal() {
   try {
@@ -47,10 +67,8 @@ function saveToLocal() {
   }
 }
 
-// отправка данных боту
 function syncWithBot() {
   if (!tg) return;
-
   const payload = {
     type: "sync",
     coins: state.coins,
@@ -58,12 +76,13 @@ function syncWithBot() {
     maxEnergy: state.maxEnergy,
     pph: state.pph,
     tapPower: state.tapPower,
+    totalTaps: state.totalTaps,
     upgrades: state.upgrades,
     lastEnergyUpdate: state.lastEnergyUpdate,
     lastBonusTime: state.lastBonusTime,
+    bonusStreak: state.bonusStreak,
     ts: Date.now(),
   };
-
   try {
     tg.sendData(JSON.stringify(payload));
   } catch (e) {
@@ -78,7 +97,11 @@ function saveState() {
 
 // ===================== ЭНЕРГИЯ =====================
 
-const ENERGY_RESTORE_PER_MIN = 5; // сколько энергии в минуту восстанавливается
+function getEnergyRegenPerMin() {
+  let regen = BASE_ENERGY_REGEN;
+  if (state.upgrades.regen) regen += REGEN_BONUS_PER_LEVEL;
+  return regen;
+}
 
 function updateEnergyFromTime() {
   const now = Date.now();
@@ -86,7 +109,7 @@ function updateEnergyFromTime() {
   if (dtMs <= 0) return;
 
   const minutes = dtMs / 60000;
-  const restored = Math.floor(minutes * ENERGY_RESTORE_PER_MIN);
+  const restored = Math.floor(minutes * getEnergyRegenPerMin());
 
   if (restored > 0) {
     state.energy = Math.min(state.maxEnergy, state.energy + restored);
@@ -100,216 +123,336 @@ function tickEnergy() {
   saveState();
 }
 
-// ===================== UI-ПОМOЩНИКИ =====================
+// ===================== UI ХЕЛПЕРЫ =====================
 
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value;
 }
 
-function applyStateToUI() {
-  // Главный экран / Charge
-  setText("coins-main", state.coins);
-  setText("energy-main", `${state.energy} / ${state.maxEnergy}`);
-  setText("pph-main", `${state.pph} / hour`);
-
-  // Wallet
-  setText("wallet-coins", state.coins);
-  setText("wallet-energy", `${state.energy} / ${state.maxEnergy}`);
-  setText("wallet-pph", `${state.pph} / hour`);
-
-  // Profile
-  setText("profile-coins", state.coins);
-  setText("profile-energy", `${state.energy} / ${state.maxEnergy}`);
-  setText("profile-pph", `${state.pph} / hour`);
-
-  // Кнопки апгрейдов
-  const minerBtn = document.getElementById("upgrade-miner-btn");
-  const gymBtn = document.getElementById("upgrade-gym-btn");
-  const farmBtn = document.getElementById("upgrade-farm-btn");
-
-  if (minerBtn) {
-    minerBtn.disabled = state.upgrades.miner;
-    minerBtn.textContent = state.upgrades.miner ? "Куплено" : "Buy";
-  }
-  if (gymBtn) {
-    gymBtn.disabled = state.upgrades.gym;
-    gymBtn.textContent = state.upgrades.gym ? "Куплено" : "Buy";
-  }
-  if (farmBtn) {
-    farmBtn.disabled = state.upgrades.farm;
-    farmBtn.textContent = state.upgrades.farm ? "Куплено" : "Buy";
-  }
-
-  // Ежедневный бонус
-  const bonusBtn = document.getElementById("daily-bonus-btn");
-  if (bonusBtn) {
-    bonusBtn.disabled = !canTakeDailyBonus();
-  }
+// форматирование числа с пробелами
+function fmtNum(n) {
+  return n.toLocaleString("ru-RU");
 }
 
-// ===================== ЕЖЕДНЕВНЫЙ БОНУС =====================
-
-const DAILY_BONUS_COINS = 1000;
+// ===================== DAILY BONUS =====================
 
 function canTakeDailyBonus() {
   if (!state.lastBonusTime) return true;
   const now = Date.now();
-  return now - state.lastBonusTime >= 24 * 60 * 60 * 1000; // 24 часа
+  return now - state.lastBonusTime >= 24 * 60 * 60 * 1000;
+}
+
+function updateDailyUI() {
+  const statusEl = document.getElementById("daily-status");
+  const btn = document.getElementById("daily-btn");
+  if (!statusEl || !btn) return;
+
+  if (canTakeDailyBonus()) {
+    const streak = state.bonusStreak || 0;
+    statusEl.textContent =
+      streak > 0 ? `Бонус доступен! Стрик: ${streak}` : "Бонус доступен!";
+    btn.classList.remove("disabled");
+    btn.disabled = false;
+  } else {
+    const now = Date.now();
+    const diffMs = 24 * 60 * 60 * 1000 - (now - state.lastBonusTime);
+    const hrs = Math.floor(diffMs / 3600000);
+    const mins = Math.floor((diffMs % 3600000) / 60000);
+    statusEl.textContent = `Следующий бонус через ${hrs} ч ${mins} мин`;
+    btn.classList.add("disabled");
+    btn.disabled = true;
+  }
 }
 
 function takeDailyBonus() {
   if (!canTakeDailyBonus()) return;
 
-  state.coins += DAILY_BONUS_COINS;
-  state.lastBonusTime = Date.now();
+  const now = Date.now();
+
+  if (!state.lastBonusTime) {
+    state.bonusStreak = 1;
+  } else {
+    const diffDays = (now - state.lastBonusTime) / (24 * 60 * 60 * 1000);
+    if (diffDays > 1.5) {
+      state.bonusStreak = 1;
+    } else {
+      state.bonusStreak = (state.bonusStreak || 0) + 1;
+    }
+  }
+
+  const reward = Math.round(
+    DAILY_BONUS_BASE * (1 + 0.1 * (state.bonusStreak - 1))
+  );
+  state.coins += reward;
+  state.lastBonusTime = now;
+
   saveState();
   applyStateToUI();
 
   if (tg) {
     tg.showPopup({
       title: "Ежедневный бонус",
-      message: `Ты получил ${DAILY_BONUS_COINS} монет!`,
+      message: `Ты получил ${fmtNum(
+        reward
+      )} монет!\nСтрик: ${state.bonusStreak}`,
       buttons: [{ type: "close" }],
     });
   }
 }
 
-// ===================== ТАПЫ И АПГРЕЙДЫ =====================
+// ===================== TAP & UPGRADES =====================
 
 function handleTap() {
   if (state.energy <= 0) {
-    tg && tg.showAlert("Нет энергии! Подожди восстановления или прокачай энергию.");
+    tg && tg.showAlert("Нет энергии! Жди восстановления или прокачай энергию.");
     return;
   }
-  state.coins += state.tapPower;
+
+  let gain = state.tapPower;
+
+  // Lucky Tap x10
+  if (state.upgrades.lucky && Math.random() < LUCKY_CHANCE) {
+    gain *= 10;
+  }
+
+  state.coins += gain;
+  state.totalTaps = (state.totalTaps || 0) + 1;
   state.energy = Math.max(0, state.energy - 1);
+
   saveState();
   applyStateToUI();
 }
 
-function buyUpgradeMiner() {
-  const price = 5000;
-  if (state.upgrades.miner) return;
-  if (state.coins < price) {
-    tg && tg.showAlert("Не хватает монет на Auto-Miner");
+const UPGRADE_CONFIG = {
+  miner: { price: 5000, apply: () => (state.pph += 200) },
+  gym: { price: 2000, apply: () => (state.tapPower += 1) },
+  farm: { price: 3000, apply: () => (state.maxEnergy += 50) },
+  tap2: { price: 4000, apply: () => (state.tapPower += 1) },
+  regen: { price: 6000, apply: () => {} }, // ускорение регена учтено в getEnergyRegenPerMin
+  crypto: { price: 10000, apply: () => (state.pph += 1000) },
+  lucky: { price: 7000, apply: () => {} }, // шанс Lucky Tap уже в handleTap
+};
+
+function buyUpgrade(key) {
+  const conf = UPGRADE_CONFIG[key];
+  if (!conf) return;
+
+  if (state.upgrades[key]) return;
+
+  if (state.coins < conf.price) {
+    tg && tg.showAlert("Не хватает монет");
     return;
   }
-  state.coins -= price;
-  state.pph += 200;
-  state.upgrades.miner = true;
+
+  state.coins -= conf.price;
+  state.upgrades[key] = true;
+  conf.apply();
+
   saveState();
   applyStateToUI();
 }
 
-function buyUpgradeGym() {
-  const price = 2000;
-  if (state.upgrades.gym) return;
-  if (state.coins < price) {
-    tg && tg.showAlert("Не хватает монет на Hamster Gym");
+// ===================== PROFILE & ACHIEVEMENTS =====================
+
+function updateProfileFromTelegram() {
+  if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) return;
+  const u = tg.initDataUnsafe.user;
+
+  const fullName = (u.first_name || "") + (u.last_name ? " " + u.last_name : "");
+  setText("profile-name", fullName || "Player");
+  setText("profile-id", `ID: ${u.id}`);
+
+  if (u.id === ADMIN_ID) {
+    isAdmin = true;
+  }
+}
+
+function updateProfileStatsUI() {
+  const days =
+    1 + Math.floor((Date.now() - state.createdAt) / (24 * 60 * 60 * 1000));
+  setText("days-value", days);
+  setText("taps-value", state.totalTaps || 0);
+  setText("streak-value", state.bonusStreak || 0);
+
+  // условный уровень от монет
+  const level = 1 + Math.floor(state.coins / 10000);
+  setText("level-value", level);
+}
+
+function updateAchievementsUI() {
+  const el = document.getElementById("ach-list");
+  if (!el) return;
+
+  const ach = [];
+
+  if ((state.totalTaps || 0) >= 10) {
+    ach.push({ title: "Tap Rookie", desc: "Сделай 10 тапов" });
+  }
+  if ((state.totalTaps || 0) >= 100) {
+    ach.push({ title: "Tap Master", desc: "Сделай 100 тапов" });
+  }
+  if (state.coins >= 10000) {
+    ach.push({ title: "Rich Hamster", desc: "Накопи 10 000 монет" });
+  }
+  if (state.bonusStreak >= 3) {
+    ach.push({ title: "Bonus Streak", desc: "3 дня подряд забирай бонус" });
+  }
+
+  if (ach.length === 0) {
+    el.innerHTML = `<div class="players-empty">Пока достижений нет. Залогинься и поиграй 🐹</div>`;
     return;
   }
-  state.coins -= price;
-  state.tapPower += 1;
-  state.upgrades.gym = true;
-  saveState();
-  applyStateToUI();
+
+  el.innerHTML = ach
+    .map(
+      (a) => `
+      <div class="ach-item">
+        <div class="ach-title">${a.title}</div>
+        <div class="ach-desc">${a.desc}</div>
+      </div>`
+    )
+    .join("");
 }
 
-function buyUpgradeFarm() {
-  const price = 3000;
-  if (state.upgrades.farm) return;
-  if (state.coins < price) {
-    tg && tg.showAlert("Не хватает монет на Energy Farm");
-    return;
-  }
-  state.coins -= price;
-  state.maxEnergy += 50;
-  state.upgrades.farm = true;
-  saveState();
-  applyStateToUI();
-}
+// ===================== ПРИМЕНЕНИЕ СТЕЙТА НА UI =====================
 
-// ===================== НАВИГАЦИЯ ПО ЭКРАНАМ =====================
+function applyStateToUI() {
+  // Wallet
+  setText("coins-value", fmtNum(state.coins));
+  setText(
+    "energy-value",
+    `${fmtNum(state.energy)} / ${fmtNum(state.maxEnergy)}`
+  );
+  setText("pph-value", `${fmtNum(state.pph)} / hour`);
 
-// порядок экранов снизу слева направо
-const SCREENS_ORDER = [
-  "screen-hamsterverse", // 1-я кнопка
-  "screen-wallet",       // 2-я
-  "screen-charge",       // 3-я
-  "screen-players",      // 4-я
-  "screen-profile",      // 5-я
-];
+  // Charge
+  setText("charge-coins", fmtNum(state.coins));
+  setText(
+    "charge-energy",
+    `${fmtNum(state.energy)} / ${fmtNum(state.maxEnergy)}`
+  );
+  setText("tap-value", `+${state.tapPower}`);
 
-function switchScreen(screenId) {
-  // жёстко прячем/показываем экраны по display
-  const screenIds = [
-    "screen-hamsterverse",
-    "screen-wallet",
-    "screen-charge",
-    "screen-players",
-    "screen-profile",
-  ];
-
-  screenIds.forEach((id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.style.display = id === screenId ? "block" : "none";
+  // Upgrades
+  document.querySelectorAll(".upgrade-btn").forEach((btn) => {
+    const key = btn.dataset.upgrade;
+    const bought = !!state.upgrades[key];
+    btn.textContent = bought ? "Куплено" : "Buy";
+    btn.disabled = bought;
   });
 
-  // подсвечиваем нижние кнопки
-  const navButtons = document.querySelectorAll(".bottom-nav .bottom-btn");
-  navButtons.forEach((btn, index) => {
-    const isActive = SCREENS_ORDER[index] === screenId;
-    btn.classList.toggle("bottom-btn--active", isActive);
-    btn.classList.toggle("active", isActive);
+  updateDailyUI();
+  updateProfileStatsUI();
+  updateAchievementsUI();
+}
+
+// ===================== НАВИГАЦИЯ ПО ВЕРХНИМ ТАБАМ =====================
+
+function showPage(pageId) {
+  document.querySelectorAll(".page").forEach((p) => {
+    if (p.id === pageId) p.classList.add("active");
+    else p.classList.remove("active");
+  });
+}
+
+function initTabsAndNav() {
+  const tabs = document.querySelectorAll(".tabs .tab");
+  const bottomButtons = document.querySelectorAll(".bottom-nav .bottom-btn");
+
+  // верхние табы Games / Social
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+
+      const target = tab.dataset.tab; // games / social
+      showPage(target);
+
+      // при переключении таба снизу активна кнопка HamsterVerse
+      bottomButtons.forEach((b) =>
+        b.classList.toggle("active", b.dataset.screen === "games")
+      );
+    });
+  });
+
+  // нижнее меню
+  bottomButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const screen = btn.dataset.screen; // games / wallet / charge / players / profile
+
+      bottomButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      if (screen === "games") {
+        // показываем либо games, либо social в зависимости от активного таба
+        const activeTab = document.querySelector(".tabs .tab.active");
+        const tabId = activeTab ? activeTab.dataset.tab : "games";
+        showPage(tabId);
+      } else {
+        showPage(screen);
+      }
+    });
   });
 }
 
 // ===================== ИНИЦИАЛИЗАЦИЯ =====================
 
 document.addEventListener("DOMContentLoaded", () => {
+  // логин из Telegram
+  updateProfileFromTelegram();
+
+  // если не админ — скрываем экран и кнопку Players
+  if (!isAdmin) {
+    const playersPage = document.getElementById("players");
+    if (playersPage) playersPage.remove();
+    const playersBtn = document.querySelector(
+      '.bottom-nav .bottom-btn[data-screen="players"]'
+    );
+    if (playersBtn) playersBtn.remove();
+  }
+
   loadFromLocal();
   updateEnergyFromTime();
   applyStateToUI();
 
-  // Восстановление энергии раз в минуту
+  // таймер восстановления энергии
   setInterval(tickEnergy, 60 * 1000);
 
-  // Навигация по нижним кнопкам по их порядку
-  const navButtons = document.querySelectorAll(".bottom-nav .bottom-btn");
-  navButtons.forEach((btn, index) => {
-    const screenId = SCREENS_ORDER[index];
-    if (!screenId) return;
-    btn.addEventListener("click", () => switchScreen(screenId));
-  });
+  initTabsAndNav();
 
-  // TAP
-  const tapBtn = document.getElementById("tap-btn");
+  // кнопка TAP
+  const tapBtn = document.getElementById("tap-button");
   tapBtn && tapBtn.addEventListener("click", handleTap);
 
-  // Ежедневный бонус
-  const bonusBtn = document.getElementById("daily-bonus-btn");
-  bonusBtn && bonusBtn.addEventListener("click", takeDailyBonus);
+  // апгрейды
+  document.querySelectorAll(".upgrade-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.upgrade;
+      buyUpgrade(key);
+    });
+  });
 
-  // Апгрейды
-  const minerBtn = document.getElementById("upgrade-miner-btn");
-  const gymBtn = document.getElementById("upgrade-gym-btn");
-  const farmBtn = document.getElementById("upgrade-farm-btn");
+  // daily bonus
+  const dailyBtn = document.getElementById("daily-btn");
+  dailyBtn && dailyBtn.addEventListener("click", takeDailyBonus);
 
-  minerBtn && minerBtn.addEventListener("click", buyUpgradeMiner);
-  gymBtn && gymBtn.addEventListener("click", buyUpgradeGym);
-  farmBtn && farmBtn.addEventListener("click", buyUpgradeFarm);
-
-  // Кнопка обновления в Wallet
-  const walletRefreshBtn = document.getElementById("wallet-refresh-btn");
-  walletRefreshBtn &&
-    walletRefreshBtn.addEventListener("click", () => {
+  // refresh в Wallet
+  const refreshBtn = document.getElementById("refresh-btn");
+  refreshBtn &&
+    refreshBtn.addEventListener("click", () => {
       updateEnergyFromTime();
       applyStateToUI();
       saveState();
     });
 
-  // Стартовый экран — HamsterVerse
-  switchScreen("screen-hamsterverse");
+  // кнопка Telegram в Social
+  const tgLinkBtn = document.getElementById("tg-link-btn");
+  tgLinkBtn &&
+    tgLinkBtn.addEventListener("click", () => {
+      window.open("https://t.me/netysil8888", "_blank");
+    });
+
+  // стартовая страница — Games
+  showPage("games");
 });
