@@ -108,7 +108,7 @@ function setText(id, value) {
 }
 
 function applyStateToUI() {
-  // Главный экран (Charge / HamsterVerse)
+  // Главный экран / Charge
   setText("coins-main", state.coins);
   setText("energy-main", `${state.energy} / ${state.maxEnergy}`);
   setText("pph-main", `${state.pph} / hour`);
@@ -169,7 +169,7 @@ function takeDailyBonus() {
   if (tg) {
     tg.showPopup({
       title: "Ежедневный бонус",
-      message: `Ты получил ${DAILY_BОНUS_COINS} монет!`,
+      message: `Ты получил ${DAILY_BONUS_COINS} монет!`,
       buttons: [{ type: "close" }],
     });
   }
@@ -179,7 +179,7 @@ function takeDailyBonus() {
 
 function handleTap() {
   if (state.energy <= 0) {
-    if (tg) tg.showAlert("Нет энергии! Подожди восстановления или прокачай энергию.");
+    tg && tg.showAlert("Нет энергии! Подожди восстановления или прокачай энергию.");
     return;
   }
   state.coins += state.tapPower;
@@ -232,18 +232,32 @@ function buyUpgradeFarm() {
 
 // ===================== НАВИГАЦИЯ ПО ЭКРАНАМ =====================
 
+// предполагаем такие id:
+// экраны:  screen-hamsterverse, screen-wallet, screen-charge, screen-players, screen-profile
+// кнопки: nav-hamsterverse,   nav-wallet,   nav-charge,   nav-players,   nav-profile
+
+const NAV_MAP = {
+  "nav-hamsterverse": "screen-hamsterverse",
+  "nav-wallet": "screen-wallet",
+  "nav-charge": "screen-charge",
+  "nav-players": "screen-players",
+  "nav-profile": "screen-profile",
+};
+
 function switchScreen(screenId) {
-  const screens = document.querySelectorAll("[data-screen]");
+  // переключаем экраны
+  const screens = document.querySelectorAll("[id^='screen-']");
   screens.forEach((el) => {
     el.classList.toggle("screen-active", el.id === screenId);
   });
 
-  const navButtons = document.querySelectorAll("[data-nav]");
+  // подсвечиваем нижние кнопки
+  const navButtons = document.querySelectorAll(".bottom-btn");
   navButtons.forEach((btn) => {
-    const target = btn.getAttribute("data-nav");
+    const target = NAV_MAP[btn.id];
     const isActive = target === screenId;
     btn.classList.toggle("bottom-btn--active", isActive);
-    btn.classList.toggle("active", isActive); // на случай старого класса
+    btn.classList.toggle("active", isActive); // вдруг используется старый класс
   });
 }
 
@@ -257,12 +271,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Восстановление энергии раз в минуту
   setInterval(tickEnergy, 60 * 1000);
 
-  // Навигация
-  document.querySelectorAll("[data-nav]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const target = btn.getAttribute("data-nav");
-      switchScreen(target);
-    });
+  // Навигация по нижним кнопкам (HamsterVerse / Wallet / Charge / Players / Profile)
+  Object.entries(NAV_MAP).forEach(([btnId, screenId]) => {
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      btn.addEventListener("click", () => switchScreen(screenId));
+    }
   });
 
   // TAP
@@ -282,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
   gymBtn && gymBtn.addEventListener("click", buyUpgradeGym);
   farmBtn && farmBtn.addEventListener("click", buyUpgradeFarm);
 
-  // Кнопка обновления в Wallet (если есть)
+  // Кнопка обновления в Wallet
   const walletRefreshBtn = document.getElementById("wallet-refresh-btn");
   walletRefreshBtn &&
     walletRefreshBtn.addEventListener("click", () => {
@@ -291,6 +305,6 @@ document.addEventListener("DOMContentLoaded", () => {
       saveState();
     });
 
-  // Стартовый экран (HamsterVerse / Charge)
+  // Стартовый экран — HamsterVerse
   switchScreen("screen-hamsterverse");
 });
