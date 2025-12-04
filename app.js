@@ -8,6 +8,8 @@ window.addEventListener("DOMContentLoaded", () => {
   const BASE_ENERGY_REGEN_MS = 5000;
 
   let userId = "local";
+  let userInfo = null;
+
   if (tg) {
     tg.expand();
     tg.setHeaderColor("#0b1020");
@@ -16,6 +18,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const user = tg.initDataUnsafe?.user;
     if (user) {
+      userInfo = user;
       userId = String(user.id);
       const name = (user.first_name || "") + " " + (user.last_name || "");
       const profileName = document.getElementById("profile-name");
@@ -153,7 +156,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // === Работа с внешним API (пока опционально) ===
+  // === Работа с внешним API (опционально) ===
   async function apiLoadState() {
     if (!API_BASE) return;
 
@@ -196,10 +199,80 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  async function apiRegisterIfNeeded() {
+    if (!API_BASE || !userInfo) return;
+    try {
+      await fetch(`${API_BASE}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: String(userInfo.id),
+          first_name: userInfo.first_name,
+          last_name: userInfo.last_name,
+          username: userInfo.username,
+        }),
+      });
+    } catch (e) {
+      console.error("register error:", e);
+    }
+  }
+
   function saveState() {
     saveToLocal();
     saveToCloud();
     apiSaveState();
+  }
+
+  // --- PLAYERS LIST (новый экран) ---
+  async function loadPlayers() {
+    const container = document.getElementById("players-list");
+    if (!container) return;
+
+    if (!API_BASE) {
+      container.innerHTML =
+        '<div class="players-empty">Функция списка игроков заработает, когда ты подключишь backend и укажешь API_BASE в app.js.</div>';
+      return;
+    }
+
+    container.innerHTML =
+      '<div class="players-empty">Загрузка списка игроков...</div>';
+
+    try {
+      const res = await fetch(`${API_BASE}/players`);
+      if (!res.ok) throw new Error("Bad status " + res.status);
+      const list = await res.json();
+
+      if (!Array.isArray(list) || list.length === 0) {
+        container.innerHTML =
+          '<div class="players-empty">Пока что кроме тебя никого нет 👀</div>';
+        return;
+      }
+
+      container.innerHTML = "";
+      list.forEach((p, index) => {
+        const row = document.createElement("div");
+        row.className = "player-row";
+
+        const place = index + 1;
+        const name =
+          p.name ||
+          (p.username ? "@" + p.username : "Player " + (p.user_id || "?"));
+        const coins = (p.coins || 0).toLocaleString("ru-RU");
+
+        row.innerHTML = `
+          <div class="player-main">
+            <div class="player-title">#${place} ${name}</div>
+            <div class="player-sub">${p.username ? "@" + p.username : ""}</div>
+          </div>
+          <div class="player-coins">${coins} 💰</div>
+        `;
+        container.appendChild(row);
+      });
+    } catch (e) {
+      console.error("loadPlayers error:", e);
+      container.innerHTML =
+        '<div class="players-empty">Не удалось загрузить игроков 😢</div>';
+    }
   }
 
   // --- Инициализация состояния ---
@@ -210,6 +283,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     loadFromCloud();
     apiLoadState();
+    apiRegisterIfNeeded();
   })();
 
   // === ЛОГИКА ИГРЫ ===
@@ -415,6 +489,9 @@ window.addEventListener("DOMContentLoaded", () => {
         showPage("wallet");
       } else if (screen === "charge") {
         showPage("charge");
+      } else if (screen === "players") {
+        showPage("players");
+        loadPlayers();
       } else if (screen === "profile") {
         showPage("profile");
       }
