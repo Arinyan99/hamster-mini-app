@@ -67,6 +67,7 @@
     </section>
 
     <!-- WALLET PAGE -->
+        <!-- WALLET PAGE -->
     <section id="wallet" class="page">
       <h2>Wallet</h2>
 
@@ -86,8 +87,22 @@
       </div>
 
       <button class="primary-btn" id="refresh-btn">🔄 Обновить данные</button>
-      <p class="hint">Теперь данные берутся из твоего прогресса (localStorage). Потом можно будет подключить бэкенд бота.</p>
+
+      <!-- DAILY BONUS -->
+      <div class="daily-card">
+        <div class="daily-text">
+          <div class="daily-title">Daily bonus</div>
+          <div class="daily-sub" id="daily-status">Проверка...</div>
+        </div>
+        <button class="daily-btn disabled" id="daily-btn">Claim</button>
+      </div>
+
+      <p class="hint">
+        Данные берутся из твоего прогресса. Daily bonus можно забирать 1 раз в сутки —
+        с растущим стриком.
+      </p>
     </section>
+
 
     <!-- CHARGE PAGE (TAP + UPGRADES) -->
     <section id="charge" class="page">
@@ -193,3 +208,4 @@
 <script src="app.js"></script>
 </body>
 </html>
+
