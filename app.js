@@ -1,4 +1,10 @@
 window.addEventListener("DOMContentLoaded", () => {
+  // === НАСТРОЙКИ АДМИНА ===
+  // TODO: сюда подставь СВОЙ числовой Telegram ID, например "123456789"
+  const ADMIN_ID = "1306116066";
+  // TODO: сюда подставь СВОЙ username без @, например "Arinyan99"
+  const OWNER_USERNAME = "netysil8888";
+
   // === Telegram WebApp ===
   const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
@@ -223,14 +229,20 @@ window.addEventListener("DOMContentLoaded", () => {
     apiSaveState();
   }
 
-  // --- PLAYERS LIST (новый экран) ---
+  // --- PLAYERS LIST (экран только для админа) ---
   async function loadPlayers() {
     const container = document.getElementById("players-list");
     if (!container) return;
 
+    if (String(userId) !== String(ADMIN_ID)) {
+      container.innerHTML =
+        '<div class="players-empty">Этот раздел доступен только админу.</div>';
+      return;
+    }
+
     if (!API_BASE) {
       container.innerHTML =
-        '<div class="players-empty">Функция списка игроков заработает, когда ты подключишь backend и укажешь API_BASE в app.js.</div>';
+        '<div class="players-empty">Подключи backend и укажи API_BASE в app.js, чтобы видеть игроков.</div>';
       return;
     }
 
@@ -284,6 +296,14 @@ window.addEventListener("DOMContentLoaded", () => {
     loadFromCloud();
     apiLoadState();
     apiRegisterIfNeeded();
+
+    // Скрываем кнопку Players для НЕ-админа
+    if (String(userId) !== String(ADMIN_ID)) {
+      const playersBtn = document.querySelector('.bottom-btn[data-screen="players"]');
+      if (playersBtn) {
+        playersBtn.style.display = "none";
+      }
+    }
   })();
 
   // === ЛОГИКА ИГРЫ ===
@@ -344,7 +364,6 @@ window.addEventListener("DOMContentLoaded", () => {
       if (!a[id]) a[id] = true;
     }
 
-    // условия
     if (state.totalTaps >= 1) unlock("first_tap");
     if (state.totalTaps >= 100) unlock("taps_100");
     if (state.totalTaps >= 1000) unlock("taps_1000");
@@ -576,7 +595,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // Клик по карточкам игр (демо)
   document.querySelectorAll(".card").forEach((card) => {
     card.addEventListener("click", () => {
-      const title = card.querySelector(".card-title").textContent;
+      const title = card.querySelector(".card-title")?.textContent || "Game";
       alert("Откроется игра: " + title);
     });
   });
@@ -631,6 +650,19 @@ window.addEventListener("DOMContentLoaded", () => {
           " монет! Стрик: " +
           state.dailyStreak
       );
+    });
+  }
+
+  // Кнопка Telegram на вкладке Social
+  const tgBtn = document.getElementById("tg-link-btn");
+  if (tgBtn) {
+    tgBtn.addEventListener("click", () => {
+      const url = `https://t.me/${OWNER_USERNAME}`;
+      if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(url);
+      } else {
+        window.open(url, "_blank");
+      }
     });
   }
 
