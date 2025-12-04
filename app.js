@@ -242,13 +242,22 @@ const SCREENS_ORDER = [
 ];
 
 function switchScreen(screenId) {
-  // переключаем экраны (ожидаем, что всем экранам задан класс .screen)
-  const screens = document.querySelectorAll(".screen");
-  screens.forEach((el) => {
-    el.classList.toggle("screen-active", el.id === screenId);
+  // жёстко прячем/показываем экраны по display
+  const screenIds = [
+    "screen-hamsterverse",
+    "screen-wallet",
+    "screen-charge",
+    "screen-players",
+    "screen-profile",
+  ];
+
+  screenIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = id === screenId ? "block" : "none";
   });
 
-  // подсвечиваем нижние кнопки (ожидаем .bottom-nav .bottom-btn)
+  // подсвечиваем нижние кнопки
   const navButtons = document.querySelectorAll(".bottom-nav .bottom-btn");
   navButtons.forEach((btn, index) => {
     const isActive = SCREENS_ORDER[index] === screenId;
