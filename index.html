@@ -67,7 +67,6 @@
     </section>
 
     <!-- WALLET PAGE -->
-        <!-- WALLET PAGE -->
     <section id="wallet" class="page">
       <h2>Wallet</h2>
 
@@ -103,9 +102,7 @@
       </p>
     </section>
 
-
-    <!-- CHARGE PAGE (TAP + UPGRADES) -->
-        <!-- CHARGE PAGE -->
+    <!-- CHARGE PAGE -->
     <section id="charge" class="page">
       <h2>Charge</h2>
 
@@ -133,7 +130,7 @@
       <h3 class="sub-title">Upgrades</h3>
 
       <div class="upgrade-list">
-        <!-- Старые апгрейды -->
+        <!-- Базовые апгрейды -->
         <div class="upgrade-row">
           <div class="upgrade-main">
             <div class="upgrade-title">Auto-Miner</div>
@@ -214,9 +211,21 @@
       </div>
     </section>
 
+    <!-- PLAYERS PAGE -->
+    <section id="players" class="page">
+      <h2>Players</h2>
+      <p class="hint">
+        Здесь будет список игроков, присоединившихся в игру (по данным с сервера).
+      </p>
+
+      <div id="players-list" class="players-list">
+        <div class="players-empty">
+          Чтобы видеть игроков, нужно подключить backend (API_BASE) в app.js.
+        </div>
+      </div>
+    </section>
 
     <!-- PROFILE PAGE -->
-        <!-- PROFILE PAGE -->
     <section id="profile" class="page">
       <h2>Profile</h2>
 
@@ -250,12 +259,14 @@
       <div id="ach-list" class="ach-list"></div>
     </section>
 
+  </main>
 
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="bottom-btn active" data-screen="games">HamsterVerse</button>
     <button class="bottom-btn" data-screen="wallet">Wallet</button>
     <button class="bottom-btn" data-screen="charge">Charge</button>
+    <button class="bottom-btn" data-screen="players">Players</button>
     <button class="bottom-btn" data-screen="profile">Profile</button>
   </nav>
 
@@ -264,5 +275,3 @@
 <script src="app.js"></script>
 </body>
 </html>
-
-
