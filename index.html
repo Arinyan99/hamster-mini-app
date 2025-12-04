@@ -105,81 +105,133 @@
 
 
     <!-- CHARGE PAGE (TAP + UPGRADES) -->
+        <!-- CHARGE PAGE -->
     <section id="charge" class="page">
       <h2>Charge</h2>
 
-      <div class="charge-top">
-        <div class="stat-card small">
+      <div class="stat-grid">
+        <div class="stat-card">
           <div class="stat-label">💰 Coins</div>
           <div class="stat-value" id="charge-coins">0</div>
         </div>
-        <div class="stat-card small">
+        <div class="stat-card">
           <div class="stat-label">⚡ Energy</div>
           <div class="stat-value" id="charge-energy">100 / 100</div>
         </div>
       </div>
 
-      <button class="tap-button" id="tap-button">
-        TAP<br>
-        <span id="tap-value">+1</span>
+      <button class="tap-btn" id="tap-button">
+        <div class="tap-label">TAP</div>
+        <div class="tap-sub" id="tap-value">+1</div>
       </button>
 
-      <p class="hint">Тапай, чтобы зарабатывать монеты. Энергия тратится, но со временем восстанавливается.</p>
+      <p class="hint">
+        Тапай, чтобы зарабатывать монеты. Энергия тратится, но со временем
+        восстанавливается. Апгрейды повышают прибыль.
+      </p>
 
-      <h3 class="section-subtitle">Upgrades</h3>
-      <div class="upgrades-list">
-        <div class="upgrade-card" data-upgrade="miner">
-          <div>
+      <h3 class="sub-title">Upgrades</h3>
+
+      <div class="upgrade-list">
+        <!-- Старые апгрейды -->
+        <div class="upgrade-row">
+          <div class="upgrade-main">
             <div class="upgrade-title">Auto-Miner</div>
-            <div class="upgrade-sub">+200 PPH</div>
+            <div class="upgrade-desc">+200 PPH</div>
           </div>
           <div class="upgrade-right">
-            <div class="upgrade-cost" id="cost-miner">5 000</div>
+            <div class="upgrade-price">5 000</div>
             <button class="upgrade-btn" data-upgrade="miner">Buy</button>
           </div>
         </div>
 
-        <div class="upgrade-card" data-upgrade="gym">
-          <div>
+        <div class="upgrade-row">
+          <div class="upgrade-main">
             <div class="upgrade-title">Hamster Gym</div>
-            <div class="upgrade-sub">+1 к силе тапов</div>
+            <div class="upgrade-desc">+1 к силе тапов</div>
           </div>
           <div class="upgrade-right">
-            <div class="upgrade-cost" id="cost-gym">2 000</div>
+            <div class="upgrade-price">2 000</div>
             <button class="upgrade-btn" data-upgrade="gym">Buy</button>
           </div>
         </div>
 
-        <div class="upgrade-card" data-upgrade="farm">
-          <div>
+        <div class="upgrade-row">
+          <div class="upgrade-main">
             <div class="upgrade-title">Energy Farm</div>
-            <div class="upgrade-sub">+50 к максимуму энергии</div>
+            <div class="upgrade-desc">+50 к максимуму энергии</div>
           </div>
           <div class="upgrade-right">
-            <div class="upgrade-cost" id="cost-farm">3 000</div>
+            <div class="upgrade-price">3 000</div>
             <button class="upgrade-btn" data-upgrade="farm">Buy</button>
+          </div>
+        </div>
+
+        <!-- Новые апгрейды -->
+        <div class="upgrade-row">
+          <div class="upgrade-main">
+            <div class="upgrade-title">Tap Booster</div>
+            <div class="upgrade-desc">+1 к силе тапов (стакуется)</div>
+          </div>
+          <div class="upgrade-right">
+            <div class="upgrade-price">4 000</div>
+            <button class="upgrade-btn" data-upgrade="tap2">Buy</button>
+          </div>
+        </div>
+
+        <div class="upgrade-row">
+          <div class="upgrade-main">
+            <div class="upgrade-title">Energy Regen+</div>
+            <div class="upgrade-desc">Энергия восстанавливается быстрее</div>
+          </div>
+          <div class="upgrade-right">
+            <div class="upgrade-price">6 000</div>
+            <button class="upgrade-btn" data-upgrade="regen">Buy</button>
+          </div>
+        </div>
+
+        <div class="upgrade-row">
+          <div class="upgrade-main">
+            <div class="upgrade-title">Crypto Farm</div>
+            <div class="upgrade-desc">+1 000 PPH</div>
+          </div>
+          <div class="upgrade-right">
+            <div class="upgrade-price">10 000</div>
+            <button class="upgrade-btn" data-upgrade="crypto">Buy</button>
+          </div>
+        </div>
+
+        <div class="upgrade-row">
+          <div class="upgrade-main">
+            <div class="upgrade-title">Lucky Tap</div>
+            <div class="upgrade-desc">Шанс ×10 награды за тап</div>
+          </div>
+          <div class="upgrade-right">
+            <div class="upgrade-price">7 000</div>
+            <button class="upgrade-btn" data-upgrade="lucky">Buy</button>
           </div>
         </div>
       </div>
     </section>
 
+
     <!-- PROFILE PAGE -->
+        <!-- PROFILE PAGE -->
     <section id="profile" class="page">
       <h2>Profile</h2>
 
-      <div class="profile-card">
-        <div class="avatar">🐹</div>
-        <div class="profile-info">
-          <div class="profile-name" id="profile-name">Player</div>
-          <div class="profile-id" id="profile-id">ID: unknown</div>
+      <div class="profile-header-card">
+        <div class="profile-main">
+          <div id="profile-name" class="profile-name">Player</div>
+          <div id="profile-id" class="profile-id">ID: 0</div>
+        </div>
+        <div class="profile-level">
+          <div class="profile-level-label">Level</div>
+          <div id="level-value" class="profile-level-value">1</div>
         </div>
       </div>
 
-      <div class="stat-grid">
-        <div class="stat-card">
-          <div class="stat-label">🏆 Level</div>
-          <div class="stat-value" id="level-value">1</div>
-        </div>
+      <div class="stat-grid profile-stats">
         <div class="stat-card">
           <div class="stat-label">📅 Days in game</div>
           <div class="stat-value" id="days-value">1</div>
@@ -188,12 +240,16 @@
           <div class="stat-label">👆 Total taps</div>
           <div class="stat-value" id="taps-value">0</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-label">🔥 Daily streak</div>
+          <div class="stat-value" id="streak-value">0</div>
+        </div>
       </div>
 
-      <p class="hint">Профиль берёт имя и ID из Telegram WebApp (если открыт внутри бота), а прогресс — из твоего локального сохранения.</p>
+      <h3 class="sub-title">Achievements</h3>
+      <div id="ach-list" class="ach-list"></div>
     </section>
 
-  </main>
 
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
@@ -208,4 +264,5 @@
 <script src="app.js"></script>
 </body>
 </html>
+
 
