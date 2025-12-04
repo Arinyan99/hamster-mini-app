@@ -4,6 +4,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // URL твоего API (когда появится backend — сюда вставишь адрес, пока оставь пустым)
   const API_BASE = ""; // например: "https://my-hamster-backend.onrender.com"
+  const DAY_MS = 1000 * 60 * 60 * 24;
 
   let userId = "local";
   if (tg) {
@@ -39,6 +40,9 @@ window.addEventListener("DOMContentLoaded", () => {
       farm: false,
     },
     createdAt: Date.now(),
+    // daily bonus
+    lastDailyDay: 0,
+    dailyStreak: 0,
   };
 
   let state = { ...DEFAULT_STATE };
@@ -187,6 +191,10 @@ window.addEventListener("DOMContentLoaded", () => {
     return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)));
   }
 
+  function getCurrentDayIndex() {
+    return Math.floor(Date.now() / DAY_MS);
+  }
+
   // === UI UPDATE ===
   function formatNumber(n) {
     return n.toLocaleString("ru-RU");
@@ -225,11 +233,44 @@ window.addEventListener("DOMContentLoaded", () => {
     tapsEl.textContent = formatNumber(state.totalTaps);
   }
 
+  function updateDailyUI() {
+    const btn = document.getElementById("daily-btn");
+    const statusEl = document.getElementById("daily-status");
+    if (!btn || !statusEl) return;
+
+    const currentDay = getCurrentDayIndex();
+    const last = state.lastDailyDay || 0;
+    const diff = currentDay - last;
+
+    if (diff >= 1) {
+      // бонус доступен
+      btn.disabled = false;
+      btn.classList.remove("disabled");
+      statusEl.textContent =
+        "Бонус доступен! Стрик: " + (state.dailyStreak || 0);
+    } else {
+      // ждём следующий день
+      btn.disabled = true;
+      btn.classList.add("disabled");
+
+      const nextTime = (last + 1) * DAY_MS;
+      const msLeft = Math.max(0, nextTime - Date.now());
+      const h = Math.floor(msLeft / (1000 * 60 * 60));
+      const m = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((msLeft % (1000 * 60)) / 1000);
+
+      const pad = (n) => String(n).padStart(2, "0");
+      statusEl.textContent =
+        "Следующий бонус через " + pad(h) + ":" + pad(m) + ":" + pad(s);
+    }
+  }
+
   function updateAllUI() {
     regenEnergy();
     updateWalletUI();
     updateChargeUI();
     updateProfileUI();
+    updateDailyUI();
   }
 
   // === NAVIGATION ===
@@ -367,6 +408,46 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Первичная отрисовка
+  // Кнопка Daily bonus
+  const dailyBtn = document.getElementById("daily-btn");
+  if (dailyBtn) {
+    dailyBtn.addEventListener("click", () => {
+      const currentDay = getCurrentDayIndex();
+      const last = state.lastDailyDay || 0;
+      const diff = currentDay - last;
+
+      if (diff < 1) {
+        return; // уже забрал сегодня
+      }
+
+      if (diff === 1) {
+        state.dailyStreak = (state.dailyStreak || 0) + 1;
+      } else {
+        state.dailyStreak = 1;
+      }
+      state.lastDailyDay = currentDay;
+
+      const base = 500;
+      const reward = base + 100 * (state.dailyStreak - 1);
+      state.coins += reward;
+
+      saveState();
+      updateAllUI();
+
+      if (tg && tg.HapticFeedback) {
+        tg.HapticFeedback.notificationOccurred("success");
+      }
+
+      alert(
+        "Ежедневный бонус: +" +
+          reward.toLocaleString("ru-RU") +
+          " монет! Стрик: " +
+          state.dailyStreak
+      );
+    });
+  }
+
+  // Первичная отрисовка + таймер для обновления таймера бонуса
   updateAllUI();
+  setInterval(updateDailyUI, 1000);
 });
