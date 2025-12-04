@@ -653,20 +653,31 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Кнопка Telegram на вкладке Social
-  const tgBtn = document.getElementById("tg-link-btn");
-  if (tgBtn) {
-    tgBtn.addEventListener("click", () => {
-      const url = `https://t.me/${OWNER_USERNAME}`;
-      if (tg && tg.openTelegramLink) {
-        tg.openTelegramLink(url);
-      } else {
-        window.open(url, "_blank");
-      }
-    });
-  }
+  
+// Кнопка Telegram на вкладке Social
+const tgBtn = document.getElementById("tg-link-btn");
+if (tgBtn) {
+  tgBtn.addEventListener("click", () => {
+    const url = `https://t.me/${OWNER_USERNAME}`;
+
+    // 1) WebApp внутри Telegram
+    if (tg && typeof tg.openTelegramLink === "function") {
+      tg.openTelegramLink(url);
+      return;
+    }
+    // 2) запасной вариант для некоторых клиентов
+    if (tg && typeof tg.openLink === "function") {
+      tg.openLink(url);
+      return;
+    }
+    // 3) обычный браузер
+    window.location.href = url;
+  });
+}
+
 
   // Первичная отрисовка + таймер для обновления daily
   updateAllUI();
   setInterval(updateDailyUI, 1000);
 });
+
