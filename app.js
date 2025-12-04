@@ -2,9 +2,10 @@ window.addEventListener("DOMContentLoaded", () => {
   // === Telegram WebApp ===
   const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
-  // URL твоего API (когда появится backend — сюда вставишь адрес, пока оставь пустым)
+  // URL твоего API (когда поднимешь backend — сюда вставишь адрес)
   const API_BASE = ""; // например: "https://my-hamster-backend.onrender.com"
   const DAY_MS = 1000 * 60 * 60 * 24;
+  const BASE_ENERGY_REGEN_MS = 5000;
 
   let userId = "local";
   if (tg) {
@@ -38,11 +39,17 @@ window.addEventListener("DOMContentLoaded", () => {
       miner: false,
       gym: false,
       farm: false,
+      tap2: false,
+      regen: false,
+      crypto: false,
+      lucky: false,
     },
     createdAt: Date.now(),
     // daily bonus
     lastDailyDay: 0,
     dailyStreak: 0,
+    // achievements
+    achievements: {},
   };
 
   let state = { ...DEFAULT_STATE };
@@ -52,7 +59,19 @@ window.addEventListener("DOMContentLoaded", () => {
     miner: 5000,
     gym: 2000,
     farm: 3000,
+    tap2: 4000,
+    regen: 6000,
+    crypto: 10000,
+    lucky: 7000,
   };
+
+  function getEnergyRegenMs() {
+    let ms = BASE_ENERGY_REGEN_MS;
+    if (state.upgrades?.regen) {
+      ms = 3000; // быстрее реген
+    }
+    return ms;
+  }
 
   function applyUpgrades() {
     state.pph = 0;
@@ -60,8 +79,23 @@ window.addEventListener("DOMContentLoaded", () => {
     state.maxEnergy = state.upgrades.farm ? 150 : 100;
 
     if (state.upgrades.miner) state.pph += 200;
-    if (state.upgrades.gym) state.tapValue = 2;
+    if (state.upgrades.crypto) state.pph += 1000;
+    if (state.upgrades.gym) state.tapValue += 1;
+    if (state.upgrades.tap2) state.tapValue += 1;
   }
+
+  // === ACHIEVEMENTS META ===
+  const ACH_DEFS = {
+    first_tap: { icon: "👆", title: "Первый тап", desc: "Сделай 1 тап" },
+    taps_100: { icon: "👆", title: "Тапер", desc: "Сделай 100 тапов" },
+    taps_1000: { icon: "🔥", title: "Тап-машина", desc: "Сделай 1000 тапов" },
+    coins_1k: { icon: "💰", title: "Первая тысяча", desc: "Накопи 1 000 монет" },
+    coins_10k: { icon: "💰", title: "Большой банк", desc: "Накопи 10 000 монет" },
+    daily_3: { icon: "📅", title: "3 дня подряд", desc: "Забери Daily bonus 3 дня подряд" },
+    daily_7: { icon: "📅", title: "7 дней подряд", desc: "Забери Daily bonus 7 дней подряд" },
+    upg_1: { icon: "🛠", title: "Первые апгрейды", desc: "Купи любой апгрейд" },
+    upg_3: { icon: "🛠", title: "Инженер", desc: "Купи 3 апгрейда" },
+  };
 
   // --- Локальное хранилище (fallback) ---
   function loadFromLocal() {
@@ -70,6 +104,8 @@ window.addEventListener("DOMContentLoaded", () => {
       if (!raw) return;
       const obj = JSON.parse(raw);
       state = { ...DEFAULT_STATE, ...obj };
+      state.upgrades = { ...DEFAULT_STATE.upgrades, ...(obj.upgrades || {}) };
+      state.achievements = { ...(obj.achievements || {}) };
     } catch (e) {
       console.error("loadFromLocal error", e);
     }
@@ -97,6 +133,8 @@ window.addEventListener("DOMContentLoaded", () => {
       try {
         const obj = JSON.parse(value);
         state = { ...DEFAULT_STATE, ...obj };
+        state.upgrades = { ...DEFAULT_STATE.upgrades, ...(obj.upgrades || {}) };
+        state.achievements = { ...(obj.achievements || {}) };
         applyUpgrades();
         updateAllUI();
       } catch (e) {
@@ -117,7 +155,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // === Работа с внешним API (пока опционально) ===
   async function apiLoadState() {
-    if (!API_BASE) return; // если URL не задан — ничего не делаем
+    if (!API_BASE) return;
 
     try {
       const res = await fetch(`${API_BASE}/state/${userId}`);
@@ -126,6 +164,11 @@ window.addEventListener("DOMContentLoaded", () => {
       const json = await res.json();
       if (json && Object.keys(json).length > 0) {
         state = { ...DEFAULT_STATE, ...json };
+        state.upgrades = {
+          ...DEFAULT_STATE.upgrades,
+          ...(json.upgrades || {}),
+        };
+        state.achievements = { ...(json.achievements || {}) };
         applyUpgrades();
         updateAllUI();
         console.log("state loaded from API");
@@ -161,23 +204,23 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // --- Инициализация состояния ---
   (function initState() {
-    loadFromLocal();   // локальное
+    loadFromLocal();
     applyUpgrades();
-    updateAllUI();     // чтобы сразу что-то показать
+    updateAllUI();
 
-    loadFromCloud();   // поверх — CloudStorage
-    apiLoadState();    // и, при наличии backend, поверх — API
+    loadFromCloud();
+    apiLoadState();
   })();
 
   // === ЛОГИКА ИГРЫ ===
 
-  // Регенерация энергии (1 ед. / 5 секунд)
   function regenEnergy() {
     const now = Date.now();
     const diff = Math.max(0, now - (state.lastEnergyTs || now));
-    const gained = Math.floor(diff / 5000);
+    const step = getEnergyRegenMs();
+    const gained = Math.floor(diff / step);
     if (gained > 0) {
-      state.lastEnergyTs = (state.lastEnergyTs || now) + gained * 5000;
+      state.lastEnergyTs = (state.lastEnergyTs || now) + gained * step;
       state.energy = Math.min(state.maxEnergy, state.energy + gained);
     }
   }
@@ -193,6 +236,64 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function getCurrentDayIndex() {
     return Math.floor(Date.now() / DAY_MS);
+  }
+
+  // === ACHIEVEMENTS LOGIC ===
+  function updateAchievementsUI() {
+    const container = document.getElementById("ach-list");
+    if (!container) return;
+
+    const unlocked = state.achievements || {};
+    container.innerHTML = "";
+
+    Object.entries(ACH_DEFS).forEach(([id, def]) => {
+      const isUnlocked = !!unlocked[id];
+      const row = document.createElement("div");
+      row.className = "ach-row" + (isUnlocked ? " unlocked" : "");
+      row.innerHTML = `
+        <div class="ach-main">
+          <div class="ach-title">${def.icon} ${def.title}</div>
+          <div class="ach-desc">${def.desc}</div>
+        </div>
+        <div class="ach-badge">${isUnlocked ? "Done" : "Locked"}</div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function checkAchievements() {
+    if (!state.achievements) state.achievements = {};
+    const a = state.achievements;
+    const before = { ...a };
+
+    function unlock(id) {
+      if (!a[id]) a[id] = true;
+    }
+
+    // условия
+    if (state.totalTaps >= 1) unlock("first_tap");
+    if (state.totalTaps >= 100) unlock("taps_100");
+    if (state.totalTaps >= 1000) unlock("taps_1000");
+    if (state.coins >= 1000) unlock("coins_1k");
+    if (state.coins >= 10000) unlock("coins_10k");
+
+    if ((state.dailyStreak || 0) >= 3) unlock("daily_3");
+    if ((state.dailyStreak || 0) >= 7) unlock("daily_7");
+
+    const upgradesOwned = Object.values(state.upgrades || {}).filter(Boolean).length;
+    if (upgradesOwned >= 1) unlock("upg_1");
+    if (upgradesOwned >= 3) unlock("upg_3");
+
+    const newIds = Object.keys(a).filter((id) => a[id] && !before[id]);
+    if (newIds.length) {
+      const names = newIds
+        .map((id) => ACH_DEFS[id]?.title || id)
+        .join(", ");
+      if (tg && tg.HapticFeedback) {
+        tg.HapticFeedback.notificationOccurred("success");
+      }
+      alert("Новое достижение: " + names + " 🎉");
+    }
   }
 
   // === UI UPDATE ===
@@ -226,11 +327,13 @@ window.addEventListener("DOMContentLoaded", () => {
     const lvlEl = document.getElementById("level-value");
     const daysEl = document.getElementById("days-value");
     const tapsEl = document.getElementById("taps-value");
-    if (!lvlEl || !daysEl || !tapsEl) return;
+    const streakEl = document.getElementById("streak-value");
+    if (!lvlEl || !daysEl || !tapsEl || !streakEl) return;
 
     lvlEl.textContent = computeLevel();
     daysEl.textContent = computeDays();
     tapsEl.textContent = formatNumber(state.totalTaps);
+    streakEl.textContent = state.dailyStreak || 0;
   }
 
   function updateDailyUI() {
@@ -243,13 +346,11 @@ window.addEventListener("DOMContentLoaded", () => {
     const diff = currentDay - last;
 
     if (diff >= 1) {
-      // бонус доступен
       btn.disabled = false;
       btn.classList.remove("disabled");
       statusEl.textContent =
         "Бонус доступен! Стрик: " + (state.dailyStreak || 0);
     } else {
-      // ждём следующий день
       btn.disabled = true;
       btn.classList.add("disabled");
 
@@ -271,6 +372,7 @@ window.addEventListener("DOMContentLoaded", () => {
     updateChargeUI();
     updateProfileUI();
     updateDailyUI();
+    updateAchievementsUI();
   }
 
   // === NAVIGATION ===
@@ -330,9 +432,17 @@ window.addEventListener("DOMContentLoaded", () => {
       }
 
       state.energy -= 1;
-      state.coins += state.tapValue;
+
+      let gain = state.tapValue;
+      if (state.upgrades.lucky && Math.random() < 0.1) {
+        gain *= 10;
+      }
+
+      state.coins += gain;
       state.totalTaps += 1;
       state.lastEnergyTs = Date.now();
+
+      checkAchievements();
       saveState();
       updateAllUI();
 
@@ -362,6 +472,7 @@ window.addEventListener("DOMContentLoaded", () => {
       state.coins -= cost;
       state.upgrades[key] = true;
       applyUpgrades();
+      checkAchievements();
       saveState();
       updateAllUI();
 
@@ -371,18 +482,16 @@ window.addEventListener("DOMContentLoaded", () => {
 
       btn.textContent = "Owned";
       btn.disabled = true;
-      btn.style.background = "#4b5563";
     });
   });
 
   // Обновляем кнопки "Owned" при загрузке
-  ["miner", "gym", "farm"].forEach((key) => {
+  Object.keys(UPGRADE_COSTS).forEach((key) => {
     if (state.upgrades[key]) {
       const btn = document.querySelector(`.upgrade-btn[data-upgrade="${key}"]`);
       if (btn) {
         btn.textContent = "Owned";
         btn.disabled = true;
-        btn.style.background = "#4b5563";
       }
     }
   });
@@ -417,7 +526,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const diff = currentDay - last;
 
       if (diff < 1) {
-        return; // уже забрал сегодня
+        return; // уже забрали сегодня
       }
 
       if (diff === 1) {
@@ -431,6 +540,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const reward = base + 100 * (state.dailyStreak - 1);
       state.coins += reward;
 
+      checkAchievements();
       saveState();
       updateAllUI();
 
@@ -447,7 +557,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Первичная отрисовка + таймер для обновления таймера бонуса
+  // Первичная отрисовка + таймер для обновления daily
   updateAllUI();
   setInterval(updateDailyUI, 1000);
 });
